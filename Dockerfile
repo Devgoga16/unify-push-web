@@ -1,5 +1,5 @@
 # Etapa 1: Build
-FROM node:18-alpine AS builder
+FROM node:20-slim AS builder
 
 # Establecer directorio de trabajo
 WORKDIR /app
@@ -7,8 +7,10 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci --legacy-peer-deps
+# Instalar dependencias (regenerar lock file para Linux)
+RUN rm -rf node_modules package-lock.json && \
+    npm install && \
+    npm cache clean --force
 
 # Copiar el resto del código
 COPY . .
