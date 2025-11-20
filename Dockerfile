@@ -10,7 +10,7 @@ COPY package*.json ./
 # 🛑 AJUSTE CLAVE 1:
 # Instalar todas las dependencias y forzar la sincronización del package-lock.json.
 # Esto genera el archivo de bloqueo corregido que la etapa 'production' necesita.
-RUN npm install && npm cache clean --force
+RUN npm install --no-optional && npm cache clean --force
 
 # Copy source code
 COPY . .
