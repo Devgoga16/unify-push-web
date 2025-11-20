@@ -1,0 +1,41 @@
+# Docker Compose for Unify Push Web Application
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-30d}
+      # API Configuration
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+      # Default Admin Credentials (change in production!)
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - ADMIN_NAME=${ADMIN_NAME:-Administrador}
+    volumes:
+      # Mount volume for persistent data (sessions, etc)
+      - app-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - unify-push-network
+
+volumes:
+  app-data:
+    driver: local
+
+networks:
+  unify-push-network:
+    driver: bridge

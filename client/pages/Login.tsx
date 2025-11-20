@@ -8,10 +8,10 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, validateCredentials } = useAuth();
+  const { login, isLoginLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -20,13 +20,13 @@ export default function Login() {
       return;
     }
 
-    if (!validateCredentials(username, password)) {
-      setError('Invalid username or password');
-      return;
+    const result = await login(username, password);
+    
+    if (result.success) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      setError(result.error || 'Login failed');
     }
-
-    login(username);
-    navigate('/dashboard', { replace: true });
   };
 
   return (
@@ -40,7 +40,7 @@ export default function Login() {
             </svg>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Unify Push</h1>
-          <p className="text-gray-600 text-lg">Sign in to your dashboard</p>
+          <p className="text-gray-600 text-lg">Tus bots para notificaciones, aquí</p>
         </div>
 
         {/* Form */}
@@ -53,7 +53,7 @@ export default function Login() {
 
           <div>
             <label htmlFor="username" className="block text-sm font-semibold text-gray-900 mb-2">
-              Username
+              Usuario
             </label>
             <Input
               id="username"
@@ -67,7 +67,7 @@ export default function Login() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-2">
-              Password
+              Contraseña
             </label>
             <Input
               id="password"
@@ -81,9 +81,10 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11 rounded-lg font-semibold transition-colors"
+            disabled={isLoginLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11 rounded-lg font-semibold transition-colors disabled:opacity-50"
           >
-            Sign In
+            {isLoginLoading ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
 
