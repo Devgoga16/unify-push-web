@@ -7,14 +7,16 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# 🛑 CAMBIAR AQUÍ (Usar npm install para sincronizar el lock file)
+# Install dependencies (Instala todas las dependencias y sincroniza el lock file)
+RUN npm install && npm cache clean --force 
 
 # Copy source code
 COPY . .
 
 # Build the application
 RUN npm run build
+# -------------------------------------------------------------
 
 # Production stage
 FROM node:20-alpine
@@ -25,7 +27,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
+# ✅ MANTENER AQUÍ (Usar npm ci para producción)
+# Install production dependencies only (Ahora el lock file ya está sincronizado por la etapa 'builder')
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built files from builder stage
