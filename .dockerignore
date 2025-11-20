@@ -22,41 +22,28 @@ coverage
 .nyc_output
 .eslintcache
 *.log
-*.lock
 *.tmp
 *.tmp.*
 log.txt
 
-.DS_Store
-node_modules
-**/node_modules/**
+# Build artifacts
 build
-data
-.env
-load-ids.txt
 
-server
-tmp
-types
-.git
-.gitignore
-dist
-service
+# Data directories
+data
+
+# Netlify
+.netlify
+
+# Tests
 tests
 fixtures-pages
 fixtures-apps
 
-# Netlify
-.netlify
-packages/ml-air/lib
-packages/ml-air/bin
-packages/ml-air/project
-packages/ml-air/share
-packages/ml-air/random_forest_classification/
-packages/ml-air/__pycache__/
-packages/ml-air/app/__pycache__/
-packages/vcp-common/native-bridge/build
-packages/vcp-common/_tests_/dataset-ranking.csv
-node_modules/
+# Docker files
 Dockerfile
-.gitignore
+docker-compose.yml
+
+# Documentation
+*.md
+!README.md
