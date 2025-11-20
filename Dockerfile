@@ -7,9 +7,9 @@ WORKDIR /app
 # Copy package files (package.json, package-lock.json, etc.)
 COPY package*.json ./
 
-# 🛑 SOLUCIÓN CLAVE 1: Usar npm install (SIN `ci`) para forzar la sincronización del lock file 
-# y la instalación de todas las dependencias (incluyendo devDeps para el build).
-RUN npm install && npm cache clean --force 
+# 🛑 SOLUCIÓN CLAVE 1: Usar npm install y forzar la inclusión de dependencias opcionales (Rollup).
+# Esto soluciona la sincronización del lock file y el error de Rollup/Vite.
+RUN npm install --include=optional && npm cache clean --force 
 
 # Copy source code
 COPY . .
@@ -30,7 +30,7 @@ COPY package.json ./
 # 🛑 SOLUCIÓN CLAVE 2: Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
 COPY --from=builder /app/package-lock.json ./
 
-# Usar npm ci para producción (Ahora el lock file es el correcto y 'npm ci' puede usarse)
+# Usar npm ci para producción (Mantenemos --only=production)
 # Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
