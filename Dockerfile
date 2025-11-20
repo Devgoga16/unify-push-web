@@ -33,7 +33,8 @@ COPY package.json ./
 COPY --from=builder /app/package-lock.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Use npm install instead of npm ci since the lock file was generated in builder stage
+RUN npm install --omit=dev && npm cache clean --force
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
