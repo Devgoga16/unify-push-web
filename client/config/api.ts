@@ -3,7 +3,7 @@
  */
 
 // Base URL del API - se puede cambiar usando la variable de entorno VITE_API_BASE_URL
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://unify-push-api-hho13t-898f76-31-97-133-67.traefik.me';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://unify-push-api-hho13t-a66e75-31-97-133-67.traefik.me';
 
 // Helper para construir URLs de API
 export const buildApiUrl = (endpoint: string): string => {
