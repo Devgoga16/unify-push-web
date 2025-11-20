@@ -4,12 +4,14 @@ FROM node:20-slim AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files (package.json, package-lock.json, etc.)
+# Copy package files
 COPY package*.json ./
 
-# 🛑 SOLUCIÓN CLAVE 1: Usar npm install y forzar la inclusión de dependencias opcionales (Rollup).
-# Esto soluciona la sincronización del lock file y el error de Rollup/Vite.
-RUN npm install --include=optional && npm cache clean --force 
+# Clean install with all dependencies (including optional like @rollup/rollup-linux-x64-gnu)
+# This fixes the Rollup native module issue in Linux containers
+RUN rm -rf node_modules package-lock.json && \
+    npm install && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -24,13 +26,12 @@ FROM node:20-slim
 # Set working directory
 WORKDIR /app
 
-# Copy package files (Copia el package.json original)
+# Copy package files
 COPY package.json ./
 
-# 🛑 SOLUCIÓN CLAVE 2: Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
+# Copy the synchronized package-lock.json from builder stage
 COPY --from=builder /app/package-lock.json ./
 
-# Usar npm ci para producción (Mantenemos --only=production)
 # Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
