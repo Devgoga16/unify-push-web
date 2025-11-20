@@ -1,64 +1,48 @@
-# Build stage
-FROM node:20-slim AS builder
+# Etapa 1: Build
+FROM node:18-alpine AS builder
 
-# Set working directory
+# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copy package files
+# Copiar archivos de dependencias
 COPY package*.json ./
 
-# Clean install with all dependencies (including optional like @rollup/rollup-linux-x64-gnu)
-# This fixes the Rollup native module issue in Linux containers
-RUN rm -rf node_modules package-lock.json && \
-    npm install && \
-    npm cache clean --force
+# Instalar dependencias
+RUN npm ci --legacy-peer-deps
 
-# Copy source code
+# Copiar el resto del código
 COPY . .
 
-# Build the application
+# Build de la aplicación
 RUN npm run build
-# -------------------------------------------------------------
 
-# Production stage
-FROM node:20-slim
+# Etapa 2: Producción
+FROM nginx:alpine
 
-# Set working directory
-WORKDIR /app
+# Copiar los archivos build desde la etapa anterior
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy package files
-COPY package.json ./
+# Copiar configuración personalizada de nginx para SPA
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    location /api/ { \
+        proxy_pass http://localhost:3001; \
+        proxy_http_version 1.1; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "upgrade"; \
+        proxy_set_header Host $host; \
+        proxy_cache_bypass $http_upgrade; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
-# Copy the synchronized package-lock.json from builder stage
-COPY --from=builder /app/package-lock.json ./
+# Exponer puerto 80
+EXPOSE 80
 
-# Install production dependencies only
-# Use npm install instead of npm ci since the lock file was generated in builder stage
-RUN npm install --omit=dev && npm cache clean --force
-
-# Copy built files from builder stage
-COPY --from=builder /app/dist ./dist
-
-# Copy necessary files
-COPY --from=builder /app/.env.example ./.env.example
-
-# Create a non-root user
-RUN addgroup --system nodejs && \
-    adduser --system --uid 1001 --ingroup nodejs nodejs
-
-# Change ownership
-RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
-USER nodejs
-
-# Expose port
-EXPOSE 3000
-
-# Environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Start the application
-CMD ["node", "dist/server/node-build.mjs"]
-CMD ["npm", "start"]
+# Comando para iniciar nginx
+CMD ["nginx", "-g", "daemon off;"]
