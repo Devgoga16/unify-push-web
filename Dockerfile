@@ -1,5 +1,4 @@
 # Build stage
-# Mantenemos 'slim' ya que es más compatible que 'alpine'
 FROM node:20-slim AS builder
 
 # Set working directory
@@ -8,9 +7,9 @@ WORKDIR /app
 # Copy package files (package.json, package-lock.json, etc.)
 COPY package*.json ./
 
-# 🛑 SOLUCIÓN CLAVE: Usamos 'npm ci' para la coherencia (ya que el lock file está ahora sincronizado), 
-# y la bandera '--include=optional' para forzar a Rollup a instalar su binario nativo.
-RUN npm ci --include=optional && npm cache clean --force 
+# 🛑 SOLUCIÓN CLAVE 1: Usar npm install (SIN `ci`) para forzar la sincronización del lock file 
+# y la instalación de todas las dependencias (incluyendo devDeps para el build).
+RUN npm install && npm cache clean --force 
 
 # Copy source code
 COPY . .
@@ -28,11 +27,11 @@ WORKDIR /app
 # Copy package files (Copia el package.json original)
 COPY package.json ./
 
-# Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
+# 🛑 SOLUCIÓN CLAVE 2: Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
 COPY --from=builder /app/package-lock.json ./
 
-# Usar npm ci para producción (Mantenemos --only=production)
-# Nota: Los binarios opcionales ya no son un problema aquí, ya que Rollup es una devDependency.
+# Usar npm ci para producción (Ahora el lock file es el correcto y 'npm ci' puede usarse)
+# Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built files from builder stage
