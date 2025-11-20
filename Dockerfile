@@ -4,12 +4,13 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files (package.json, package-lock.json, etc.)
 COPY package*.json ./
 
-# 🛑 CAMBIAR AQUÍ (Usar npm install para sincronizar el lock file)
-# Install dependencies (Instala todas las dependencias y sincroniza el lock file)
-RUN npm install && npm cache clean --force 
+# 🛑 AJUSTE CLAVE 1:
+# Instalar todas las dependencias y forzar la sincronización del package-lock.json.
+# Esto genera el archivo de bloqueo corregido que la etapa 'production' necesita.
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -24,11 +25,16 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (Copia el package.json original)
+COPY package.json ./
 
-# ✅ MANTENER AQUÍ (Usar npm ci para producción)
-# Install production dependencies only (Ahora el lock file ya está sincronizado por la etapa 'builder')
+# 🛑 AJUSTE CLAVE 2:
+# Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
+# Esto garantiza que el archivo de bloqueo sea coherente con package.json.
+COPY --from=builder /app/package-lock.json ./
+
+# ✅ Usar npm ci para producción (Ahora funcionará porque el lock file está sincronizado)
+# Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built files from builder stage
@@ -52,7 +58,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
 CMD ["npm", "start"]
