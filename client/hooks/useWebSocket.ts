@@ -50,7 +50,7 @@ export const useWebSocket = () => {
     isConnectingRef.current = true;
 
     try {
-      const wsUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const wsUrl = import.meta.env.VITE_API_BASE_URL || 'http://unify-push-api-hho13t-a66e75-31-97-133-67.traefik.me';
       console.log('🌐 WebSocket connecting to:', wsUrl);
 
       const newSocket = io(wsUrl, {
