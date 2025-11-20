@@ -1,5 +1,5 @@
 # Build stage
-# 🛑 CAMBIO CLAVE: Usar 'slim' en lugar de 'alpine' para compatibilidad con Rollup
+# Mantenemos 'slim' ya que es más compatible que 'alpine'
 FROM node:20-slim AS builder
 
 # Set working directory
@@ -8,9 +8,9 @@ WORKDIR /app
 # Copy package files (package.json, package-lock.json, etc.)
 COPY package*.json ./
 
-# Instalar todas las dependencias y forzar la sincronización del lock file.
-# Mantenemos 'npm install' para evitar el error de sincronización de lock file anterior.
-RUN npm install && npm cache clean --force 
+# 🛑 SOLUCIÓN CLAVE: Usamos 'npm ci' para la coherencia (ya que el lock file está ahora sincronizado), 
+# y la bandera '--include=optional' para forzar a Rollup a instalar su binario nativo.
+RUN npm ci --include=optional && npm cache clean --force 
 
 # Copy source code
 COPY . .
@@ -20,7 +20,6 @@ RUN npm run build
 # -------------------------------------------------------------
 
 # Production stage
-# 🛑 CAMBIO CLAVE: Usar 'slim' en lugar de 'alpine' en la etapa de producción
 FROM node:20-slim
 
 # Set working directory
@@ -32,8 +31,8 @@ COPY package.json ./
 # Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
 COPY --from=builder /app/package-lock.json ./
 
-# Usar npm ci para producción (Ahora funcionará con el lock file sincronizado)
-# Install production dependencies only
+# Usar npm ci para producción (Mantenemos --only=production)
+# Nota: Los binarios opcionales ya no son un problema aquí, ya que Rollup es una devDependency.
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built files from builder stage
@@ -42,8 +41,7 @@ COPY --from=builder /app/dist ./dist
 # Copy necessary files
 COPY --from=builder /app/.env.example ./.env.example
 
-# Create a non-root user (Este paso puede requerir instalar 'shadow' en Debian, 
-# pero la mayoría de las veces funciona directamente con 'slim')
+# Create a non-root user
 RUN addgroup --system nodejs && \
     adduser --system --uid 1001 --ingroup nodejs nodejs
 
