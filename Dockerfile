@@ -1,5 +1,6 @@
 # Build stage
-FROM node:20-alpine AS builder
+# 🛑 CAMBIO CLAVE: Usar 'slim' en lugar de 'alpine' para compatibilidad con Rollup
+FROM node:20-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -7,10 +8,9 @@ WORKDIR /app
 # Copy package files (package.json, package-lock.json, etc.)
 COPY package*.json ./
 
-# 🛑 AJUSTE CLAVE 1:
-# Instalar todas las dependencias y forzar la sincronización del package-lock.json.
-# Esto genera el archivo de bloqueo corregido que la etapa 'production' necesita.
-RUN npm install --no-optional && npm cache clean --force
+# Instalar todas las dependencias y forzar la sincronización del lock file.
+# Mantenemos 'npm install' para evitar el error de sincronización de lock file anterior.
+RUN npm install && npm cache clean --force 
 
 # Copy source code
 COPY . .
@@ -20,7 +20,8 @@ RUN npm run build
 # -------------------------------------------------------------
 
 # Production stage
-FROM node:20-alpine
+# 🛑 CAMBIO CLAVE: Usar 'slim' en lugar de 'alpine' en la etapa de producción
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
@@ -28,12 +29,10 @@ WORKDIR /app
 # Copy package files (Copia el package.json original)
 COPY package.json ./
 
-# 🛑 AJUSTE CLAVE 2:
 # Copiar el package-lock.json SINCRONIZADO desde la etapa 'builder'. 
-# Esto garantiza que el archivo de bloqueo sea coherente con package.json.
 COPY --from=builder /app/package-lock.json ./
 
-# ✅ Usar npm ci para producción (Ahora funcionará porque el lock file está sincronizado)
+# Usar npm ci para producción (Ahora funcionará con el lock file sincronizado)
 # Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
@@ -43,9 +42,10 @@ COPY --from=builder /app/dist ./dist
 # Copy necessary files
 COPY --from=builder /app/.env.example ./.env.example
 
-# Create a non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Create a non-root user (Este paso puede requerir instalar 'shadow' en Debian, 
+# pero la mayoría de las veces funciona directamente con 'slim')
+RUN addgroup --system nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nodejs
 
 # Change ownership
 RUN chown -R nodejs:nodejs /app
